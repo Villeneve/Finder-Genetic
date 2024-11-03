@@ -42,16 +42,17 @@ def misturador_redes(model1,model2):
 
 
 def entradaRede(finalPosition, positionIndividual):
-    dx = finalPosition[0] - positionIndividual[0]
-    dy = finalPosition[1] - positionIndividual[1]
-    out = np.array([dx,dy])/np.linalg.norm([collums,rows])*10
+    dx = (finalPosition[0] - positionIndividual[0])/collums
+    dy = (finalPosition[1] - positionIndividual[1])/rows
+    out = np.array([dx,dy])#/np.linalg.norm([collums,rows])*10
     return out
 
 
 def create_model():
 
     input = Input(shape=(2,), name='Entrada')
-    x = Dense(100, name='Densa_1')(input)
+    x = Dense(5, name='Densa_1')(input)
+    #x = Dense(5, name='Densa_2')(x)
     #x = Dense(10, name='Densa_2')(x)
     x = Dense(2, activation='tanh', name='Saida')(x)
     model = keras.models.Model(inputs = input, outputs = x)
@@ -77,7 +78,7 @@ rows = 720
 FPS = 60
 n_models = 50
 tempo = 10
-mutation_rate = .1
+mutation_rate = 1
 speed = 300
 
 posicao_inicial = np.array([[np.random.randint(0,collums),np.random.randint(0,rows)]])
@@ -86,7 +87,7 @@ posicao_final = np.array([[np.random.randint(0,collums),np.random.randint(0,rows
 pygame.init()
 screen = pygame.display.set_mode((collums,rows))
 clock = pygame.time.Clock()
-
+clock.tick(FPS)
 
 model = [train_model(create_model()) for _ in range(n_models)]
 
@@ -98,15 +99,15 @@ for geracao in range(100):
     posicao_final = np.array([np.random.randint(0,collums),np.random.randint(0,rows)])
     posicao_inicial = np.array([np.random.randint(0,collums),np.random.randint(0,rows)])
     individuos = [Individual(posicao_inicial[0],posicao_inicial[1]) for _ in range(n_models)]
-    t = time.time()
+    t = 0
+    mutation_rate /= 2
 
-    while time.time() - t < tempo:
+    while t < tempo:
 
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit()
-
 
         screen.fill((0,0,0)) #Limpar a tela
         result = []
@@ -115,29 +116,32 @@ for geracao in range(100):
             pygame.draw.circle(screen,(0,0,255),(individuos[i].position[0],individuos[i].position[1]),5)
         pygame.draw.circle(screen,(255,0,0),(posicao_final[0],posicao_final[1]),10) #Ponto de interesse/final
 
-        result = np.array(result).astype(np.float64)
+        result = np.array(result)
         menor1 = np.argmin(result[:,0])
-        #print(entradaRede(posicao_final,individuos[menor1].position))
         result[menor1,0] = np.inf
         menor2 = np.argmin(result[:,0])
         pygame.draw.line(screen,(0,255,0),individuos[menor1].position,posicao_final)
         pygame.draw.line(screen,(0,255,0),individuos[menor2].position,posicao_final)
         pygame.display.update()
+        
 
         #input = input_calc(posicao_final,individuos)
         for i in range(n_models):
             input = entradaRede(posicao_final,individuos[i].position)
             input = np.expand_dims(input, axis=0)
-            out = model[i](input, training=False)
+            #input = np.expand_dims(input, axis=0)
+            #out = np.array(model[i](input, training=False))
+            out = model[i].predict_on_batch(input)
             # individuos[i].velocity[0] += out[0,0]*speed*clock.get_time()/1000
             # individuos[i].velocity[1] += out[0,1]*speed*clock.get_time()/1000
             # individuos[i].position[0] += individuos[i].velocity[0]*clock.get_time()/1000
             # individuos[i].position[1] += individuos[i].velocity[1]*clock.get_time()/1000
-            individuos[i].position[0] += out[0,0]*speed*clock.get_time()/1000.
-            individuos[i].position[1] += out[0,1]*speed*clock.get_time()/1000.
+            delta_T = clock.get_time()
+            individuos[i].position[0] += out[0,0]*speed*delta_T/1000.
+            individuos[i].position[1] += out[0,1]*speed*delta_T/1000.
 
-
-        clock.tick(FPS)
+        
+        t += clock.get_time()/1000.
 
     score = np.array([distanceAngle(posicao_final,individuos[i].position)[0] for i in range(n_models)])
     score /= score.sum()
@@ -152,3 +156,4 @@ for geracao in range(100):
     model.append(best_model2)    
     for _ in range(n_models-4):
         model.append(train_model(copy.copy(best_model1)))
+    pygame.display.update()
