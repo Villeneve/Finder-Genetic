@@ -2,11 +2,9 @@ import numpy as np
 import pygame
 from pygame.locals import *
 import sys
-from classes import *
 import keras.api as keras
 from keras.api.layers import *
 import copy
-import time
 import tensorflow as tf
 
 
