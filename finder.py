@@ -51,8 +51,8 @@ def entradaRede(finalPosition, positionIndividual):
 def create_model():
 
     input = Input(shape=(2,), name='Entrada')
-    x = Dense(5, name='Densa_1')(input)
-    #x = Dense(5, name='Densa_2')(x)
+    x = Dense(3, name='Densa_1')(input)
+    x = Dense(3, name='Densa_2')(x)
     #x = Dense(10, name='Densa_2')(x)
     x = Dense(2, activation='tanh', name='Saida')(x)
     model = keras.models.Model(inputs = input, outputs = x)
@@ -77,8 +77,8 @@ collums = 1280
 rows = 720
 FPS = 60
 n_models = 50
-tempo = 10
-mutation_rate = 1
+tempo = 5
+mutation_rate = 1.
 speed = 300
 
 posicao_inicial = np.array([[np.random.randint(0,collums),np.random.randint(0,rows)]])
@@ -132,6 +132,8 @@ for geracao in range(100):
             #input = np.expand_dims(input, axis=0)
             #out = np.array(model[i](input, training=False))
             out = model[i].predict_on_batch(input)
+            if np.linalg.norm(out) > 1:
+                out /= np.linalg.norm(out)
             # individuos[i].velocity[0] += out[0,0]*speed*clock.get_time()/1000
             # individuos[i].velocity[1] += out[0,1]*speed*clock.get_time()/1000
             # individuos[i].position[0] += individuos[i].velocity[0]*clock.get_time()/1000
